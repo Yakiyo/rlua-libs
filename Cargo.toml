@@ -1,0 +1,10 @@
+[package]
+name = "rlua_libs"
+description = "Extension modules for rlua"
+authors = ["Yakiyo <yakiyo1206@gmail.com>"]
+repository = "http://github.com/Yakiyo/rlua-libs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rlua = "0.19.7"
