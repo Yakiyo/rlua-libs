@@ -1,3 +1,5 @@
 local response_get = http.get("https://example.com")
+local client = http.client()
+print(response_get:status())
 
-print(response_get)
+print(client:get("http://example.com"):body())

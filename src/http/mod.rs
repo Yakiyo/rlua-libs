@@ -22,7 +22,12 @@ impl From<reqwest::blocking::Response> for HttpResponse {
     }
 }
 
-impl UserData for HttpResponse {}
+impl UserData for HttpResponse {
+    fn add_methods<'lua, T: UserDataMethods<'lua, Self>>(methods: &mut T) {
+        methods.add_method("body", |_, req, _: ()| Ok(req.body.clone()));
+        methods.add_method("status", |_, req, _: ()| Ok(req.code));
+    }
+}
 
 impl Deref for HttpClient {
     type Target = Client;
@@ -32,15 +37,6 @@ impl Deref for HttpClient {
     }
 }
 
-fn client_get(_: rlua::Context<'_>, client: &HttpClient, url: String) -> LuaResult<HttpResponse> {
-    let response: HttpResponse = client
-        .get(&url)
-        .send()
-        .map_err(|e| rlua::Error::ExternalError(Arc::new(e)))?
-        .into();
-    Ok(response)
-}
-
 /// Create a new client instantiation
 pub fn create_client(_: Context, _: ()) -> LuaResult<HttpClient> {
     Ok(HttpClient(Client::new()))
@@ -48,16 +44,34 @@ pub fn create_client(_: Context, _: ()) -> LuaResult<HttpClient> {
 
 impl UserData for HttpClient {
     fn add_methods<'lua, T: UserDataMethods<'lua, Self>>(methods: &mut T) {
-        methods.add_method("get", client_get);
+        methods.add_method(
+            "get",
+            |_: rlua::Context<'_>, client: &HttpClient, url: String| {
+                let response: HttpResponse = client
+                    .get(&url)
+                    .send()
+                    .map_err(|e| rlua::Error::ExternalError(Arc::new(e)))?
+                    .into();
+                Ok(response)
+            },
+        );
 
-        methods.add_method("post", |_, client, url: String| {
-            let response: HttpResponse = client
-                .post(&url)
-                .send()
-                .map_err(|e| rlua::Error::ExternalError(Arc::new(e)))?
-                .into();
-            Ok(response)
-        });
+        methods.add_method(
+            "post",
+            |_, client, (url, body): (String, Option<String>)| {
+                let request = client.post(&url);
+                let request = if let Some(body) = body {
+                    request.body(body)
+                } else {
+                    request
+                };
+                let response: HttpResponse = request
+                    .send()
+                    .map_err(|e| rlua::Error::ExternalError(Arc::new(e)))?
+                    .into();
+                Ok(response)
+            },
+        );
     }
 }
 
