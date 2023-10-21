@@ -95,16 +95,7 @@ mod tests {
         let lua = Lua::new();
         super::load(&lua).unwrap();
         lua.context(|ctx| {
-            ctx.load(
-                r#"
-            local http = require("http")
-            local response_get = http.get("https://example.com")
-
-            print(response_get)
-            "#,
-            )
-            .exec()
-            .unwrap();
+            ctx.load(include_str!("http.lua")).exec().unwrap();
         })
     }
 }
