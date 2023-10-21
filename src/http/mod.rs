@@ -42,7 +42,7 @@ fn client_get(_: rlua::Context<'_>, client: &HttpClient, url: String) -> LuaResu
 }
 
 /// Create a new client instantiation
-pub fn create_client(_: Context) -> LuaResult<HttpClient> {
+pub fn create_client(_: Context, _: ()) -> LuaResult<HttpClient> {
     Ok(HttpClient(Client::new()))
 }
 
@@ -62,10 +62,49 @@ impl UserData for HttpClient {
 }
 
 /// Load the http module within the lua context
-pub fn load(lua: Lua) -> LuaResult<()> {
-    lua.context(|ctx| {
+pub fn load(lua: &Lua) -> LuaResult<()> {
+    lua.context::<_, LuaResult<()>>(|ctx| {
         let http_module = ctx.create_table()?;
-        http_module.set("client", ctx.create_function(create_client))?;
-    });
-    Ok(())
+        // Register the `http.client()` function
+        http_module.set("client", ctx.create_function(create_client)?)?;
+        // Register the `http.get()` function. This internally creates a new client
+        // and invokes its `get` method
+        http_module.set(
+            "get",
+            ctx.create_function(|_, url: String| {
+                let client = HttpClient(Client::new());
+                let response: HttpResponse = client
+                    .get(&url)
+                    .send()
+                    .map_err(|e| rlua::Error::ExternalError(Arc::new(e)))?
+                    .into();
+                Ok(response)
+            })?,
+        )?;
+        let globals = ctx.globals();
+        globals.set("http", http_module)?;
+        Ok(())
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use rlua::*;
+    #[test]
+    fn lua_http() {
+        let lua = Lua::new();
+        super::load(&lua).unwrap();
+        lua.context(|ctx| {
+            ctx.load(
+                r#"
+            local http = require("http")
+            local response_get = http.get("https://example.com")
+
+            print(response_get)
+            "#,
+            )
+            .exec()
+            .unwrap();
+        })
+    }
 }
