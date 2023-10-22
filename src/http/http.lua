@@ -1,3 +1,5 @@
+http = require("http")
+
 -- define client
 local client = http.client()
 

@@ -29,7 +29,13 @@ pub fn load(lua: &Lua) -> LuaResult<()> {
         // register top level post request
         http.set("post", ctx.create_function(post)?)?;
 
-        ctx.globals().set("http", http)
+        let globals = ctx.globals();
+        let package: rlua::Table = globals.get("package").unwrap_or(ctx.create_table()?);
+        let loaded: rlua::Table = package.get("loaded").unwrap_or(ctx.create_table()?);
+        loaded.set("http", http)?;
+        package.set("loaded", loaded)?;
+        globals.set("package", package)?;
+        Ok(())
     })
 }
 
