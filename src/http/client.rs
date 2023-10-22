@@ -1,8 +1,8 @@
+use super::request::Request;
+use super::response::HttpResponse;
 use reqwest::blocking::Client as RClient;
 use rlua::UserData;
 use std::sync::Arc;
-
-use super::response::HttpResponse;
 
 pub(super) struct HttpClient(RClient);
 
@@ -38,6 +38,18 @@ impl UserData for HttpClient {
                     .map_err(|e| rlua::Error::ExternalError(Arc::new(e)))
                     .map(|f| Into::<HttpResponse>::into(f)))
             },
-        )
+        );
+
+        methods.add_method("do_request", |_, client, request: Request| {
+            client
+                .execute(
+                    request
+                        .inner()
+                        .build()
+                        .map_err(|e| rlua::Error::external(e))?,
+                )
+                .map_err(|e| rlua::Error::external(e))
+                .map(|v| Into::<HttpResponse>::into(v))
+        });
     }
 }

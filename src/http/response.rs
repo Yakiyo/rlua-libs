@@ -14,6 +14,7 @@ use rlua::UserData;
 /// print(resp.status()) -- type int
 /// print(resp.body())   -- type string
 /// ```
+#[derive(Debug, Clone)]
 pub(super) struct HttpResponse {
     /// Response body
     pub(super) body: String,
