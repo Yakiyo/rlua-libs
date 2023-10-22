@@ -17,7 +17,7 @@ use rlua::{Context, Lua, Result as LuaResult};
 /// http.get("url")
 /// http.post("url", "body")
 /// ```
-pub fn load(lua: Lua) -> LuaResult<()> {
+pub fn load(lua: &Lua) -> LuaResult<()> {
     lua.context::<_, LuaResult<()>>(|ctx| {
         let http = ctx.create_table()?;
         // register `http.client()`
@@ -59,4 +59,17 @@ fn get(_: Context, url: String) -> LuaResult<HttpResponse> {
 fn post(_: Context, (url, body): (String, Option<String>)) -> LuaResult<HttpResponse> {
     let client: HttpClient = RClient::new().into();
     client.post_func(url, body)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test() {
+        let lua = Lua::new();
+        load(&lua).unwrap();
+        lua.context(|ctx| {
+            ctx.load(include_str!("http.lua")).exec().unwrap();
+        });
+    }
 }
