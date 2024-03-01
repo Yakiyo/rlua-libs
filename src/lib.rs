@@ -4,5 +4,7 @@ pub mod filepath;
 pub mod http;
 #[cfg(feature = "log")]
 pub mod log;
+#[cfg(feature = "strings")]
+pub mod strings;
 
 mod util;
