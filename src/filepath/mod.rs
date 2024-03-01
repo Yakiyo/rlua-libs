@@ -50,6 +50,10 @@ pub fn load(lua: &Lua) -> LuaResult<()> {
         fp.set("basename", ctx.create_function(basename)?)?;
         fp.set("dir", ctx.create_function(dir)?)?;
         fp.set("join", ctx.create_function(join)?)?;
+        fp.set(
+            "path_sep",
+            ctx.create_string(std::path::MAIN_SEPARATOR_STR)?,
+        )?;
 
         crate::util::def_mod(ctx, "filepath", fp)
     })
